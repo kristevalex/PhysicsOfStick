@@ -29,21 +29,33 @@ struct palochka
 
     vec c, postup;
 
-    double alf;
+    double angle;
 
     double vrach;
 
     palochka () noexcept :
         c   (rand()%(sizeX - 20*R) + 10*R, rand()%(sizeY - 20*R) + 10*R),
-        alf (0),
+        angle (0),
         postup (3.1, -1.9),
         vrach (0.02)
-            {
-            t[0] = vec(c.x + sin(alf)*R, c.y + cos(alf)*R);
-            t[1] = vec(c.x - sin(alf)*R, c.y - cos(alf)*R);
+        {
+        t[0] = vec(c.x + sin(angle)*R, c.y + cos(angle)*R);
+        t[1] = vec(c.x - sin(angle)*R, c.y - cos(angle)*R);
 
-            postup^= (rand()% 100 + 2);
-            }
+        postup^= (rand()% 100 + 2);
+        }
+
+    void draw() const
+        {
+        int x = (GetAsyncKeyState (VK_SPACE))? 255:0;
+
+        txSetFillColor (RGB((int)(255 - (c.y/sizeY*200)), (int)(c.x/sizeX*200 + 55), x));
+        txSetColor     (RGB((int)(255 - (c.y/sizeY*200)), (int)(c.x/sizeX*200 + 55), x), 2);
+
+        txLine   (t[0].x, t[0].y, t[1].x, t[1].y);
+        txCircle (t[0].x, t[0].y, r);
+        txCircle (t[1].x, t[1].y, r);
+        }
     };
 
 
@@ -54,8 +66,6 @@ void otty (palochka* Main);
 void dovorot (palochka* Main);
 void ottalkivanie (palochka* Main);
 
-
-void print_palochka (palochka Main);
 
 void all_fizics (palochka* Main);
 
@@ -82,7 +92,7 @@ int main()
             {
             all_fizics (&(Main[i]));
 
-            print_palochka (Main[i]);
+            Main[i].draw();
             }
 
         txEnd   ();
@@ -92,37 +102,25 @@ int main()
     }
 
 
-void print_palochka (palochka Main)
-    {
-    int x = (GetAsyncKeyState (VK_SPACE))? 255:0;
-
-    txSetFillColor (RGB((int)(255 - (Main.c.y/sizeY*200)), (int)(Main.c.x/sizeX*200 + 55), x));
-    txSetColor     (RGB((int)(255 - (Main.c.y/sizeY*200)), (int)(Main.c.x/sizeX*200 + 55), x), 2);
-
-    txLine   (Main.t[0].x, Main.t[0].y, Main.t[1].x, Main.t[1].y);
-    txCircle (Main.t[0].x, Main.t[0].y, r);
-    txCircle (Main.t[1].x, Main.t[1].y, r);
-    }
-
  void all_fizics (palochka* Main)               //осноная программа
     {
     // всё остальное   (движение)
 
     Main->c    += Main->postup;
-    Main->alf  += Main->vrach;
+    Main->angle  += Main->vrach;
 
-    Main->t[0].x = Main->c.x + sin(Main->alf)*R;
-    Main->t[0].y = Main->c.y + cos(Main->alf)*R;
-    Main->t[1].x = Main->c.x - sin(Main->alf)*R;
-    Main->t[1].y = Main->c.y - cos(Main->alf)*R;
+    Main->t[0].x = Main->c.x + sin(Main->angle)*R;
+    Main->t[0].y = Main->c.y + cos(Main->angle)*R;
+    Main->t[1].x = Main->c.x - sin(Main->angle)*R;
+    Main->t[1].y = Main->c.y - cos(Main->angle)*R;
 
 
     //отталкивание от стенок
 
-    Main->v[0].x = Main->postup.x + Main->vrach*R*sin(Main->alf + M_PI_2);                                                                          // |
-    Main->v[0].y = Main->postup.y + Main->vrach*R*cos(Main->alf + M_PI_2);                                                                         // |
-    Main->v[1].x = Main->postup.x - Main->vrach*R*sin(Main->alf + M_PI_2);                                                                           // |
-    Main->v[1].y = Main->postup.y - Main->vrach*R*cos(Main->alf + M_PI_2);
+    Main->v[0].x = Main->postup.x + Main->vrach*R*sin(Main->angle + M_PI_2);                                                                          // |
+    Main->v[0].y = Main->postup.y + Main->vrach*R*cos(Main->angle + M_PI_2);                                                                         // |
+    Main->v[1].x = Main->postup.x - Main->vrach*R*sin(Main->angle + M_PI_2);                                                                           // |
+    Main->v[1].y = Main->postup.y - Main->vrach*R*cos(Main->angle + M_PI_2);
 
     ottalkivanie (Main);
     }
@@ -140,14 +138,14 @@ void ottx (palochka* Main)
             {
             Main->v[i].x = -Main->v[i].x;
 
-            auto _v = Main->v[1 - i].get_rotated(Main->alf);
+            auto _v = Main->v[1 - i].get_rotated(Main->angle);
 
 
-            _v.y = -2*(_v.x*sin(Main->alf + txPI) - Main->v[i].y - Main->v[1 - i].y)*cos(Main->alf)/(1 + cos(Main->alf)*cos(Main->alf)) - _v.y;
+            _v.y = -2*(_v.x*sin(Main->angle + txPI) - Main->v[i].y - Main->v[1 - i].y)*cos(Main->angle)/(1 + cos(Main->angle)*cos(Main->angle)) - _v.y;
 
-            Main->v[i].y = Main->v[i].y + Main->v[1 - i].y - _v.x*sin(Main->alf + txPI) - _v.y*cos(Main->alf);
+            Main->v[i].y = Main->v[i].y + Main->v[1 - i].y - _v.x*sin(Main->angle + txPI) - _v.y*cos(Main->angle);
 
-            Main->v[1 - i] = _v.get_rotated(-Main->alf);
+            Main->v[1 - i] = _v.get_rotated(-Main->angle);
 
             dovorot(Main);
             }
@@ -162,14 +160,14 @@ void otty (palochka* Main)
             {
             Main->v[i].y = -Main->v[i].y;
 
-            auto _v = Main->v[1 - i].get_rotated(Main->alf);
+            auto _v = Main->v[1 - i].get_rotated(Main->angle);
 
 
-            _v.y = -2*(_v.x*cos(Main->alf) - Main->v[i].x - Main->v[1 - i].x)*sin(Main->alf)/(1 + sin(Main->alf)*sin(Main->alf)) - _v.y;
+            _v.y = -2*(_v.x*cos(Main->angle) - Main->v[i].x - Main->v[1 - i].x)*sin(Main->angle)/(1 + sin(Main->angle)*sin(Main->angle)) - _v.y;
 
-            Main->v[i].x = Main->v[i].x + Main->v[1 - i].x - _v.x*cos(Main->alf) - _v.y*sin(Main->alf);
+            Main->v[i].x = Main->v[i].x + Main->v[1 - i].x - _v.x*cos(Main->angle) - _v.y*sin(Main->angle);
 
-            Main->v[1 - i] = _v.get_rotated(-Main->alf);
+            Main->v[1 - i] = _v.get_rotated(-Main->angle);
 
             dovorot(Main);
             }
@@ -203,6 +201,3 @@ void dovorot (palochka* Main)
         if (Main->t[i].y > sizeY - r) Main->c.y-= Main->t[i].y - sizeY + r;
         }
     }
-
-
-
