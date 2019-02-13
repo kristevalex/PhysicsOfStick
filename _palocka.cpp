@@ -1,6 +1,4 @@
 //{===========================================================================
-//! @file       Examples\Demo\jestkie_svizi.cpp
-//!
 //! @brief      жесткие связи
 //!
 //!
@@ -18,8 +16,8 @@ const int R = 40;
 
 const int ColVo = 100;
 
-const int sizeX = GetSystemMetrics (SM_CXSCREEN),
-          sizeY = GetSystemMetrics (SM_CYSCREEN);
+const int sizeX = GetSystemMetrics(SM_CXSCREEN),
+          sizeY = GetSystemMetrics(SM_CYSCREEN);
 
 
 struct palochka
@@ -29,9 +27,8 @@ struct palochka
 
     vec c, postup;
 
-    double angle;
+    double angle, vrach;
 
-    double vrach;
 
     palochka() noexcept :
         c (rand()%(sizeX - 20*R) + 10*R, rand()%(sizeY - 20*R) + 10*R),
@@ -47,7 +44,7 @@ struct palochka
 
     void draw() const
         {
-        int x = (GetAsyncKeyState (VK_SPACE))? 255:0;
+        int x = (GetAsyncKeyState(VK_SPACE))? 255:0;
 
         txSetFillColor (RGB((int)(255 - (c.y/sizeY*200)), (int)(c.x/sizeX*200 + 55), x));
         txSetColor     (RGB((int)(255 - (c.y/sizeY*200)), (int)(c.x/sizeX*200 + 55), x), 2);
@@ -56,7 +53,6 @@ struct palochka
         txCircle (t[0].x, t[0].y, r);
         txCircle (t[1].x, t[1].y, r);
         }
-
 
 
     void calculate_physics()
@@ -80,7 +76,47 @@ struct palochka
 
     void repulsion()
         {
+        repulsion_x();
+        repulsion_y();
+        }
 
+    void repulsion_x()
+        {
+        for (int i = 0; i < 2; i++)  //running through both point of stick
+            if (t[i].x < r || t[i].x > sizeX - r)  //checking for collision
+                {
+                v[i].x = -v[i].x;
+
+                auto _v = v[1 - i].get_rotated(angle);
+
+
+                _v.y = -2*(_v.x*sin(angle + M_PI) - v[i].y - v[1 - i].y)*cos(angle)/(1 + cos(angle)*cos(angle)) - _v.y;
+
+                v[i].y = v[i].y + v[1 - i].y - _v.x*sin(angle + txPI) - _v.y*cos(angle);
+
+                v[1 - i] = _v.get_rotated(-angle);
+
+                convert_back();
+                }
+        }
+
+    void repulsion_y()
+        {
+        for (int i = 0; i < 2; i++)  //running through both point of stick
+            if (t[i].y < r || t[i].y > sizeY - r)  //checking for collision
+                {
+                v[i].y = -v[i].y;
+
+                auto _v = v[1 - i].get_rotated(angle);
+
+
+                _v.y = -2*(_v.x*cos(angle) - v[i].x - v[1 - i].x)*sin(angle)/(1 + sin(angle)*sin(angle)) - _v.y;
+
+                v[i].x = v[i].x + v[1 - i].x - _v.x*cos(angle) - _v.y*sin(angle);
+
+                v[1 - i] = _v.get_rotated(-angle);
+                convert_back();
+                }
         }
 
     void convert_back()
@@ -112,114 +148,34 @@ struct palochka
     };
 
 
-void ottx (palochka* Main);
-void otty (palochka* Main);
-
-
-void dovorot (palochka* Main);
-void ottalkivanie (palochka* Main);
-
-
-void all_fizics (palochka* Main);
-
 
 int main()
     {
-    txTextCursor (false);
+    txTextCursor(false);
 
-    _txWindowStyle &= ~ WS_CAPTION;                //= WS_POPUP | WS_BORDER | WS_CAPTION | WS_SYSMENU;
+    _txWindowStyle &= ~ WS_CAPTION;
 
-    txCreateWindow (sizeX, sizeY);
+    txCreateWindow(sizeX, sizeY);
 
     palochka Main[ColVo];
 
 
     while (!GetAsyncKeyState (VK_ESCAPE))
         {
-        txBegin ();
-        txSetFillColor (TX_BLACK);
-        txSetColor     (TX_BLACK);
-        txClear ();
+        txBegin();
+        txSetFillColor(TX_BLACK);
+        txSetColor    (TX_BLACK);
+        txClear();
 
         for (int i = 0; i < ColVo; i++)
             {
-            all_fizics (&(Main[i]));
+            Main[i].calculate_physics();
 
             Main[i].draw();
             }
 
-        txEnd   ();
+        txEnd();
         }
 
     return 0;
-    }
-
-
- void all_fizics (palochka* Main)               //осноная программа
-    {
-    // всё остальное   (движение)
-
-    Main->c     += Main->postup;
-    Main->angle += Main->vrach;
-
-    Main->t[0].x = Main->c.x + sin(Main->angle)*R;
-    Main->t[0].y = Main->c.y + cos(Main->angle)*R;
-    Main->t[1].x = Main->c.x - sin(Main->angle)*R;
-    Main->t[1].y = Main->c.y - cos(Main->angle)*R;
-
-
-    //отталкивание от стенок
-
-    Main->v[0].x = Main->postup.x + Main->vrach*R*sin(Main->angle + M_PI_2);                                                                          // |
-    Main->v[0].y = Main->postup.y + Main->vrach*R*cos(Main->angle + M_PI_2);                                                                         // |
-    Main->v[1].x = Main->postup.x - Main->vrach*R*sin(Main->angle + M_PI_2);                                                                           // |
-    Main->v[1].y = Main->postup.y - Main->vrach*R*cos(Main->angle + M_PI_2);
-
-    ottalkivanie (Main);
-    }
-
-void ottalkivanie (palochka* Main)
-    {
-    ottx (Main);
-    otty (Main);
-    }
-
-void ottx (palochka* Main)
-    {
-    for (int i = 0; i < 2; i++)
-        if (Main->t[i].x < r || Main->t[i].x > sizeX - r)
-            {
-            Main->v[i].x = -Main->v[i].x;
-
-            auto _v = Main->v[1 - i].get_rotated(Main->angle);
-
-
-            _v.y = -2*(_v.x*sin(Main->angle + txPI) - Main->v[i].y - Main->v[1 - i].y)*cos(Main->angle)/(1 + cos(Main->angle)*cos(Main->angle)) - _v.y;
-
-            Main->v[i].y = Main->v[i].y + Main->v[1 - i].y - _v.x*sin(Main->angle + txPI) - _v.y*cos(Main->angle);
-
-            Main->v[1 - i] = _v.get_rotated(-Main->angle);
-
-            Main->convert_back();
-            }
-    }
-
-void otty (palochka* Main)
-    {
-    for (int i = 0; i < 2; i++)
-
-        if (Main->t[i].y < r || Main->t[i].y > sizeY - r)
-            {
-            Main->v[i].y = -Main->v[i].y;
-
-            auto _v = Main->v[1 - i].get_rotated(Main->angle);
-
-
-            _v.y = -2*(_v.x*cos(Main->angle) - Main->v[i].x - Main->v[1 - i].x)*sin(Main->angle)/(1 + sin(Main->angle)*sin(Main->angle)) - _v.y;
-
-            Main->v[i].x = Main->v[i].x + Main->v[1 - i].x - _v.x*cos(Main->angle) - _v.y*sin(Main->angle);
-
-            Main->v[1 - i] = _v.get_rotated(-Main->angle);
-            Main->convert_back();
-            }
     }
