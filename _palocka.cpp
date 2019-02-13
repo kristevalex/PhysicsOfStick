@@ -33,8 +33,8 @@ struct palochka
 
     double vrach;
 
-    palochka () noexcept :
-        c   (rand()%(sizeX - 20*R) + 10*R, rand()%(sizeY - 20*R) + 10*R),
+    palochka() noexcept :
+        c (rand()%(sizeX - 20*R) + 10*R, rand()%(sizeY - 20*R) + 10*R),
         angle (0),
         postup (3.1, -1.9),
         vrach (0.02)
@@ -55,6 +55,59 @@ struct palochka
         txLine   (t[0].x, t[0].y, t[1].x, t[1].y);
         txCircle (t[0].x, t[0].y, r);
         txCircle (t[1].x, t[1].y, r);
+        }
+
+
+
+    void calculate_physics()
+        {
+        c+= postup;
+        angle+= vrach;
+
+        t[0].x = c.x + sin(angle)*R;
+        t[0].y = c.y + cos(angle)*R;
+        t[1].x = c.x - sin(angle)*R;
+        t[1].y = c.y - cos(angle)*R;
+
+
+        v[0].x = postup.x + vrach*R*sin(angle + M_PI_2);                                                                          // |
+        v[0].y = postup.y + vrach*R*cos(angle + M_PI_2);                                                                         // |
+        v[1].x = postup.x - vrach*R*sin(angle + M_PI_2);                                                                           // |
+        v[1].y = postup.y - vrach*R*cos(angle + M_PI_2);
+
+        repulsion();
+        }
+
+    void repulsion()
+        {
+
+        }
+
+    void convert_back()
+        {
+        postup = (v[0] + v[1])/2;
+
+        vec v_to_rotate[2] = {v[0] - postup,
+                              v[1] - postup};
+
+
+        double znak = 1;
+        if ((v_to_rotate[0].y*(t[0].x - t[1].x) - v_to_rotate[0].x*(t[0].y - t[1].y)) > 0) znak = -1;
+
+        vrach = znak*sqrt((sqr(v[0].x) +
+                           sqr(v[1].x) +
+                           sqr(v[0].y) +
+                           sqr(v[1].y) -
+                           2*sqr(postup.x) -
+                           2*sqr(postup.y))/(2*sqr(R)));
+
+        for (int i = 0; i < 2; i++)
+            {
+            if (t[i].x <         r) c.x-= t[i].x -         r;
+            if (t[i].y <         r) c.y-= t[i].y -         r;
+            if (t[i].x > sizeX - r) c.x-= t[i].x - sizeX + r;
+            if (t[i].y > sizeY - r) c.y-= t[i].y - sizeY + r;
+            }
         }
     };
 
@@ -106,8 +159,8 @@ int main()
     {
     // всё остальное   (движение)
 
-    Main->c    += Main->postup;
-    Main->angle  += Main->vrach;
+    Main->c     += Main->postup;
+    Main->angle += Main->vrach;
 
     Main->t[0].x = Main->c.x + sin(Main->angle)*R;
     Main->t[0].y = Main->c.y + cos(Main->angle)*R;
@@ -147,9 +200,8 @@ void ottx (palochka* Main)
 
             Main->v[1 - i] = _v.get_rotated(-Main->angle);
 
-            dovorot(Main);
+            Main->convert_back();
             }
-
     }
 
 void otty (palochka* Main)
@@ -168,36 +220,6 @@ void otty (palochka* Main)
             Main->v[i].x = Main->v[i].x + Main->v[1 - i].x - _v.x*cos(Main->angle) - _v.y*sin(Main->angle);
 
             Main->v[1 - i] = _v.get_rotated(-Main->angle);
-
-            dovorot(Main);
+            Main->convert_back();
             }
-    }
-
-void dovorot (palochka* Main)
-    {
-    auto new_forward_speed = (Main->v[0]+Main->v[1])/2;
-
-    Main->postup = new_forward_speed;
-
-    vec v_to_rotate[2] = {Main->v[0] - Main->postup,
-                          Main->v[1] - Main->postup};
-
-
-    double znak = 1;
-    if ((v_to_rotate[0].y*(Main->t[0].x - Main->t[1].x) - v_to_rotate[0].x*(Main->t[0].y - Main->t[1].y)) > 0) znak = -1;
-
-    Main->vrach = znak*sqrt((Main->v[0].x*Main->v[0].x +
-                             Main->v[1].x*Main->v[1].x +
-                             Main->v[0].y*Main->v[0].y +
-                             Main->v[1].y*Main->v[1].y -
-                             2*new_forward_speed.x*new_forward_speed.x -
-                             2*new_forward_speed.y*new_forward_speed.y)/(2*R*R));
-
-    for (int i = 0; i < 2; i++)
-        {
-        if (Main->t[i].x <         r) Main->c.x-= Main->t[i].x -         r;
-        if (Main->t[i].y <         r) Main->c.y-= Main->t[i].y -         r;
-        if (Main->t[i].x > sizeX - r) Main->c.x-= Main->t[i].x - sizeX + r;
-        if (Main->t[i].y > sizeY - r) Main->c.y-= Main->t[i].y - sizeY + r;
-        }
     }

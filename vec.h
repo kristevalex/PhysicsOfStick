@@ -6,6 +6,11 @@ double atan_ (double x, double y)
     return returned;
     }
 
+inline double sqr (double val)
+    {
+    return val*val;
+    }
+
 class vec
     {
     public:
