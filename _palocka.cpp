@@ -11,16 +11,16 @@
 #include "vec.h"
 
 
-const double r = 7;
-const int R = 40;
+const int BallsSize = 7;
+const int StickRadius = 40;
 
-const int ColVo = 100;
+const int NumberOfSticks = 100;
 
 const int sizeX = GetSystemMetrics(SM_CXSCREEN),
           sizeY = GetSystemMetrics(SM_CYSCREEN);
 
 
-struct palochka
+struct stick
     {
     vec t[2];
     vec v[2];
@@ -30,14 +30,14 @@ struct palochka
     double angle, vrach;
 
 
-    palochka() noexcept :
-        c (rand()%(sizeX - 20*R) + 10*R, rand()%(sizeY - 20*R) + 10*R),
+    stick() noexcept :
+        c (rand()%(sizeX - 20*StickRadius) + 10*StickRadius, rand()%(sizeY - 20*StickRadius) + 10*StickRadius),
         angle (0),
         postup (3.1, -1.9),
         vrach (0.02)
         {
-        t[0] = vec(c.x + sin(angle)*R, c.y + cos(angle)*R);
-        t[1] = vec(c.x - sin(angle)*R, c.y - cos(angle)*R);
+        t[0] = vec(c.x + sin(angle)*StickRadius, c.y + cos(angle)*StickRadius);
+        t[1] = vec(c.x - sin(angle)*StickRadius, c.y - cos(angle)*StickRadius);
 
         postup^= (rand()% 100 + 2);
         }
@@ -50,8 +50,8 @@ struct palochka
         txSetColor     (RGB((int)(255 - (c.y/sizeY*200)), (int)(c.x/sizeX*200 + 55), x), 2);
 
         txLine   (t[0].x, t[0].y, t[1].x, t[1].y);
-        txCircle (t[0].x, t[0].y, r);
-        txCircle (t[1].x, t[1].y, r);
+        txCircle (t[0].x, t[0].y, BallsSize);
+        txCircle (t[1].x, t[1].y, BallsSize);
         }
 
 
@@ -60,16 +60,16 @@ struct palochka
         c+= postup;
         angle+= vrach;
 
-        t[0].x = c.x + sin(angle)*R;
-        t[0].y = c.y + cos(angle)*R;
-        t[1].x = c.x - sin(angle)*R;
-        t[1].y = c.y - cos(angle)*R;
+        t[0].x = c.x + sin(angle)*StickRadius;
+        t[0].y = c.y + cos(angle)*StickRadius;
+        t[1].x = c.x - sin(angle)*StickRadius;
+        t[1].y = c.y - cos(angle)*StickRadius;
 
 
-        v[0].x = postup.x + vrach*R*sin(angle + M_PI_2);                                                                          // |
-        v[0].y = postup.y + vrach*R*cos(angle + M_PI_2);                                                                         // |
-        v[1].x = postup.x - vrach*R*sin(angle + M_PI_2);                                                                           // |
-        v[1].y = postup.y - vrach*R*cos(angle + M_PI_2);
+        v[0].x = postup.x + vrach*StickRadius*sin(angle + M_PI_2);                                                                          // |
+        v[0].y = postup.y + vrach*StickRadius*cos(angle + M_PI_2);                                                                         // |
+        v[1].x = postup.x - vrach*StickRadius*sin(angle + M_PI_2);                                                                           // |
+        v[1].y = postup.y - vrach*StickRadius*cos(angle + M_PI_2);
 
         repulsion();
         }
@@ -83,7 +83,7 @@ struct palochka
     void repulsion_x()
         {
         for (int i = 0; i < 2; i++)  //running through both point of stick
-            if (t[i].x < r || t[i].x > sizeX - r)  //checking for collision
+            if (t[i].x < BallsSize || t[i].x > sizeX - BallsSize)  //checking for collision
                 {
                 v[i].x = -v[i].x;
 
@@ -103,7 +103,7 @@ struct palochka
     void repulsion_y()
         {
         for (int i = 0; i < 2; i++)  //running through both point of stick
-            if (t[i].y < r || t[i].y > sizeY - r)  //checking for collision
+            if (t[i].y < BallsSize || t[i].y > sizeY - BallsSize)  //checking for collision
                 {
                 v[i].y = -v[i].y;
 
@@ -135,14 +135,14 @@ struct palochka
                            sqr(v[0].y) +
                            sqr(v[1].y) -
                            2*sqr(postup.x) -
-                           2*sqr(postup.y))/(2*sqr(R)));
+                           2*sqr(postup.y))/(2*sqr(StickRadius)));
 
         for (int i = 0; i < 2; i++)
             {
-            if (t[i].x <         r) c.x-= t[i].x -         r;
-            if (t[i].y <         r) c.y-= t[i].y -         r;
-            if (t[i].x > sizeX - r) c.x-= t[i].x - sizeX + r;
-            if (t[i].y > sizeY - r) c.y-= t[i].y - sizeY + r;
+            if (t[i].x <         BallsSize) c.x-= t[i].x -         BallsSize;
+            if (t[i].y <         BallsSize) c.y-= t[i].y -         BallsSize;
+            if (t[i].x > sizeX - BallsSize) c.x-= t[i].x - sizeX + BallsSize;
+            if (t[i].y > sizeY - BallsSize) c.y-= t[i].y - sizeY + BallsSize;
             }
         }
     };
@@ -157,7 +157,7 @@ int main()
 
     txCreateWindow(sizeX, sizeY);
 
-    palochka Main[ColVo];
+    stick Sticks[NumberOfSticks];
 
 
     while (!GetAsyncKeyState (VK_ESCAPE))
@@ -167,11 +167,11 @@ int main()
         txSetColor    (TX_BLACK);
         txClear();
 
-        for (int i = 0; i < ColVo; i++)
+        for (int i = 0; i < NumberOfSticks; i++)
             {
-            Main[i].calculate_physics();
+            Sticks[i].calculate_physics();
 
-            Main[i].draw();
+            Sticks[i].draw();
             }
 
         txEnd();
