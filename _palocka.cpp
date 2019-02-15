@@ -25,21 +25,21 @@ struct stick
     vec t[2];
     vec v[2];
 
-    vec c, postup;
+    vec c, forward_speed;
 
-    double angle, vrach;
+    double angle, rotation_speed;
 
 
     stick() noexcept :
         c (rand()%(sizeX - 20*StickRadius) + 10*StickRadius, rand()%(sizeY - 20*StickRadius) + 10*StickRadius),
         angle (0),
-        postup (3.1, -1.9),
-        vrach (0.02)
+        forward_speed (3.1, -1.9),
+        rotation_speed (0.02)
         {
         t[0] = vec(c.x + sin(angle)*StickRadius, c.y + cos(angle)*StickRadius);
         t[1] = vec(c.x - sin(angle)*StickRadius, c.y - cos(angle)*StickRadius);
 
-        postup^= (rand()% 100 + 2);
+        forward_speed^= (rand()% 100 + 2);
         }
 
     void draw() const
@@ -57,8 +57,8 @@ struct stick
 
     void calculate_physics()
         {
-        c+= postup;
-        angle+= vrach;
+        c+= forward_speed;
+        angle+= rotation_speed;
 
         t[0].x = c.x + sin(angle)*StickRadius;
         t[0].y = c.y + cos(angle)*StickRadius;
@@ -66,10 +66,10 @@ struct stick
         t[1].y = c.y - cos(angle)*StickRadius;
 
 
-        v[0].x = postup.x + vrach*StickRadius*sin(angle + M_PI_2);                                                                          // |
-        v[0].y = postup.y + vrach*StickRadius*cos(angle + M_PI_2);                                                                         // |
-        v[1].x = postup.x - vrach*StickRadius*sin(angle + M_PI_2);                                                                           // |
-        v[1].y = postup.y - vrach*StickRadius*cos(angle + M_PI_2);
+        v[0].x = forward_speed.x + rotation_speed*StickRadius*sin(angle + M_PI_2);                                                                          // |
+        v[0].y = forward_speed.y + rotation_speed*StickRadius*cos(angle + M_PI_2);                                                                         // |
+        v[1].x = forward_speed.x - rotation_speed*StickRadius*sin(angle + M_PI_2);                                                                           // |
+        v[1].y = forward_speed.y - rotation_speed*StickRadius*cos(angle + M_PI_2);
 
         repulsion();
         }
@@ -121,21 +121,20 @@ struct stick
 
     void convert_back()
         {
-        postup = (v[0] + v[1])/2;
+        forward_speed = (v[0] + v[1])/2;
 
-        vec v_to_rotate[2] = {v[0] - postup,
-                              v[1] - postup};
+        vec left_to_rotate[2] = {v[0] - forward_speed,
+                                 v[1] - forward_speed};
 
 
-        double znak = 1;
-        if ((v_to_rotate[0].y*(t[0].x - t[1].x) - v_to_rotate[0].x*(t[0].y - t[1].y)) > 0) znak = -1;
+        double course = ((left_to_rotate[0].y*(t[0].x - t[1].x) - left_to_rotate[0].x*(t[0].y - t[1].y)) > 0)? -1:1;
 
-        vrach = znak*sqrt((sqr(v[0].x) +
-                           sqr(v[1].x) +
-                           sqr(v[0].y) +
-                           sqr(v[1].y) -
-                           2*sqr(postup.x) -
-                           2*sqr(postup.y))/(2*sqr(StickRadius)));
+        rotation_speed = course*sqrt((sqr(v[0].x) +
+                                      sqr(v[1].x) +
+                                      sqr(v[0].y) +
+                                      sqr(v[1].y) -
+                                      2*sqr(forward_speed.x) -
+                                      2*sqr(forward_speed.y))/(2*sqr(StickRadius)));
 
         for (int i = 0; i < 2; i++)
             {
